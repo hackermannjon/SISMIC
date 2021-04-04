@@ -1,3 +1,4 @@
+// Sensor JOAO VICTOR ALVES DOS SANTOS - UNB
 #include <msp430.h> 
 #include "clock.h"
 #include "pmm.h"
@@ -8,9 +9,9 @@ void Init();
 void trig();
 void calc_dist();
 void leds();
+
 uint16_t CONTADOR0,CONTADOR1;
-int flag=0;
-double DIST ;
+uint32_t DIST ;
 
 
 
@@ -44,10 +45,8 @@ void leds()
 
 void trig(){
 
-
-    __delay_cycles(50000);   // debounce
     P1OUT |= BIT5;          // ON
-    __delay_cycles(10);     // Trigger Pulse
+    __delay_cycles(500);     // Trigger Pulse
     P1OUT &= ~BIT5;          // OFF
 
 
@@ -74,7 +73,7 @@ void main()
     Init();
     TA1CCTL1 = CM_3 | CCIS_0 | SCS| CAP | CCIE;
 
-    TA1CTL = TASSEL__SMCLK   |  MC_2      |   TACLR;            // limpa o Timer A
+    TA1CTL = TASSEL__ACLK   |ID__4|  MC_2     ;            // limpa o Timer A
 
 
 
@@ -94,10 +93,6 @@ void main()
 
         trig();
 
-        if(flag==1){
-        calc_dist();
-        leds();
-        }
 
 
 
@@ -122,16 +117,15 @@ void Init (){
     P4OUT &= ~BIT7;             // LED verde off
 
                     // TRIGGER (P1.5)
-    P1DIR |= BIT5;              // direção de saída (uC manda informação)
     P1OUT &= ~BIT5;             // início em 0 V
-
+    P1DIR |= BIT5;              // direção de saída (uC manda informação)
 
 
 
 
                     // Echo (P2.0)
     P2DIR &= ~BIT0;             // direção de entrada (sensor manda informação)
- //   P2SEL |= BIT0;              // modo de captura utlizado (TA0.1)
+    P2SEL |= BIT0;              // modo de captura utlizado (TA0.1)
 
 
 
@@ -141,8 +135,9 @@ void Init (){
 
                     // CALCULA DISTANCIA EM CM
 void calc_dist(){
-    DIST = (CONTADOR1-CONTADOR0)/1048576;
-    DIST *= 12000;
+    DIST = 34000*(CONTADOR1-CONTADOR0);
+    DIST >>= 14;
+
 
 }
 
@@ -152,17 +147,19 @@ __interrupt void TA1_CCRN_ISR(){
     switch(TA1IV){
       case 2:
                            // LIGAR LED SO PRA VER SE ENTRA NESSE CASO
-                  if(flag==1)
+                  if(TA1CCTL1 & CCI)
                       {
 
                           CONTADOR0 = TA1CCR1;
-                          flag=0;
+
 
                       }
-                  else
+                  else if(!(TA1CCTL1 & CCI))
                       {
                           CONTADOR1 = TA1CCR1;
-                          flag = 1;
+
+                          calc_dist();
+                          leds();
 
                       }
         break;
@@ -170,6 +167,3 @@ __interrupt void TA1_CCRN_ISR(){
     default: break;
     }
 }
-
-
-
