@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <intrinsics.h>
 
-#define TA0_CCRN_VECTOR 52         // Timer A0 CCR1,2,3,4 interruption priority
 void Init();
 void trig();
 void calc_dist();
