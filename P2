@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <intrinsics.h>
 
-#define TA0_CCRN_INT 52         // Timer A0 CCR1,2,3,4 interruption priority
+#define TA0_CCRN_VECTOR 52         // Timer A0 CCR1,2,3,4 interruption priority
 void Init();
 void trig();
 void calc_dist();
@@ -81,7 +81,7 @@ void calc_dist(){
 }
 
                     // CCR1 = TRIGGER// CCR2 = ECHO LEITURAS// CCR3 = BUZZER ATIVA
-#pragma vector=TA0_CCRN_INT
+#pragma vector=TA0_CCRN_VECTOR
 __interrupt void TA0_CCRN_ISR(){
     switch(TA0IV){
       case 2:
