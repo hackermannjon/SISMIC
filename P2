@@ -28,16 +28,19 @@ void main()
     // Your program here...
     Init();
     TA0CCTL1 |= CM_3 | CCIS_0 | SCS | CAP | CCIE;
-    TA0CCTL0 |= CM_3 | CCIS_0 | SCS | CAP | CCIE;
-
 
     TA0CTL |= TASSEL__SMCLK |   // 1048576 Hz
                   MC_2          |   // modo continuous (0xFFFF)
                   TACLR;            // limpa o Timer A
+
+
     // Inicializar Pinos e setar SMCLK
     _BIS_SR(GIE);
 
+    // Enable Global Interrupt
+
     while (1){ };
+    // loop infinito aqui ?? nao ta indo no interrupt;
 
 
 
@@ -56,11 +59,11 @@ void Init (){
     P4DIR |= BIT7;              // direção de saída
     P4OUT &= ~BIT7;             // LED verde off
 
-                    // TRIGGER (P1.3)
+                    // TRIGGER (P1.5)
     P1DIR |= BIT5;              // direção de saída (uC manda informação)
     P1OUT &= ~BIT5;             // início em 0 V
 
-    // Echo (P1.2)https://github.com/Tubar2/SisMic/blob/master/Lab/Prob_2/main.c
+                    // Echo (P2.0)
     P2DIR &= ~BIT0;             // direção de entrada (sensor manda informação)
     P2SEL |= BIT0;              // modo de captura utlizado (TA0.1)
 
@@ -69,38 +72,40 @@ void Init (){
 }
 
 
-
+                    // CALCULA DISTANCIA EM CM
 void calc_dist(){
     DIST = CONTADOR/1048576;
     DIST *= 12000;
 
 }
 
+                    // CCR1 = TRIGGER// CCR2 = ECHO LEITURAS// CCR3 = BUZZER ATIVA
 #pragma vector=TA0_CCRN_INT
 __interrupt void TA0_CCRN_ISR(){
     switch(TA0IV){
       case 2:
-          P1OUT |= BIT0;
+                  P1OUT |= BIT0;            // LIGAR LED SO PRA VER SE ENTRA NESSE CASO
                   __delay_cycles(50000);   // debounce
                   P1OUT ^= BIT5;          // ON
                   __delay_cycles(10);     // Trigger Pulse
                   P1OUT ^= BIT5;          // OFF
-        
+
         break;
       case 4:
-          P1OUT |= BIT0;// CCR1
-                  if(TA0CCTL1 & CCI){ // Read the CCI bit (ECHO signal) --> CCI reflects the state of Captura pin --> ECHO signal
+                  P1OUT |= BIT0;            // LIGAR LED SO PRA VER SE ENTRA NESSE CASO
+                  if(TA0CCTL1 & CCI)
+                  {
                           CONTADOR = TA0CCR1; //takes first time measure in us
-                      }
-                  else if(!(TA0CCTL1 & CCI)){
+                  }
+                  else if(!(TA0CCTL1 & CCI))
+                  {
                           CONTADOR = TA0CCR1 - CONTADOR;
                           calc_dist();
                           leds();
 
-                          // to obtain distance in centimeters: (time in us/58) --> (see Datasheet HC-SR04)
-                      }
-                  break;
-      case 6:    
+                  }
+        break;
+      case 6:break;
           // Buzzer;
     default: break;
     }
