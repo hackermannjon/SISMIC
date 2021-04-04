@@ -34,7 +34,7 @@ void main()
 
     TA0CTL |= TASSEL__SMCLK |   // 1048576 Hz
                   MC_2          |   // modo continuous (0xFFFF)
-                  TACLR;            // limpa o Timer A            
+                  TACLR;            // limpa o Timer A
     // Inicializar Pinos e setar SMCLK
     _BIS_SR(GIE);
 
@@ -80,34 +80,32 @@ void calc_dist(){
 #pragma vector=TA0_CCRN_INT
 __interrupt void TA0_CCRN_ISR(){
     switch(TA0IV){
-    case 2:
-        P1OUT |= BIT0;// CCR1
-        if(TA0CCTL1 & CCI){ // Read the CCI bit (ECHO signal) --> CCI reflects the state of Captura pin --> ECHO signal
-                CONTADOR = TA0CCR1; //takes first time measure in us
-            }
-        else if(!(TA0CCTL1 & CCI)){
-                CONTADOR = TA0CCR1 - CONTADOR;
-                calc_dist();
-                leds();
-
-                // to obtain distance in centimeters: (time in us/58) --> (see Datasheet HC-SR04)
-            }
+      case 2:
+          P1OUT |= BIT0;
+                  __delay_cycles(50000);   // debounce
+                  P1OUT ^= BIT5;          // ON
+                  __delay_cycles(10);     // Trigger Pulse
+                  P1OUT ^= BIT5;          // OFF
+        
         break;
+      case 4:
+          P1OUT |= BIT0;// CCR1
+                  if(TA0CCTL1 & CCI){ // Read the CCI bit (ECHO signal) --> CCI reflects the state of Captura pin --> ECHO signal
+                          CONTADOR = TA0CCR1; //takes first time measure in us
+                      }
+                  else if(!(TA0CCTL1 & CCI)){
+                          CONTADOR = TA0CCR1 - CONTADOR;
+                          calc_dist();
+                          leds();
+
+                          // to obtain distance in centimeters: (time in us/58) --> (see Datasheet HC-SR04)
+                      }
+                  break;
+      case 6:    
+          // Buzzer;
     default: break;
     }
 }
-
-
-#pragma vector=TA0_CCR0_INT
-__interrupt void TA0_CCR0_ISR(){
-         P1OUT |= BIT0;
-        __delay_cycles(50000);   // debounce
-        P1OUT ^= BIT5;          // ON
-        __delay_cycles(10);     // Trigger Pulse
-        P1OUT ^= BIT5;          // OFF
-
-
-    }
 
 
 
