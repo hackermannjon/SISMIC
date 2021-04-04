@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <intrinsics.h>
 
-#define TA0_CCR0_INT 53         // Timer A0 CCR0 interruption priority
 #define TA0_CCRN_INT 52         // Timer A0 CCR1,2,3,4 interruption priority
 void Init();
 void trig();
