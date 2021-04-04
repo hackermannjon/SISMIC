@@ -8,108 +8,8 @@ void Init();
 void trig();
 void calc_dist();
 void leds();
-uint32_t CONTADOR = 0;
-uint32_t DIST = 0;
-void main()
-{
-    // Stop watchdog timer
-    WDTCTL = WDTPW | WDTHOLD;
-
-    // Increase core voltage so CPU can run at 16Mhz
-    // Step 1 allows clocks up to 12MHz, step 2 allows rising MCLK to 16MHz
-    pmmVCore(1);
-    pmmVCore(2);
-
-    // Configure clock
-    // This should make MCLK @16MHz, SMCLK @1MHz and ACLK @32768Hz
-    clockInit();
-
-    // Your program here...
-    Init();
-    TA0CCTL1 |= CM_3 | CCIS_0 | SCS | CAP | CCIE;
-
-    TA0CTL |= TASSEL__SMCLK |   // 1048576 Hz
-                  MC_2          |   // modo continuous (0xFFFF)
-                  TACLR;            // limpa o Timer A
-
-
-    // Inicializar Pinos e setar SMCLK
-    __enable_interrupt();
-    _BIS_SR(GIE);
-
-    // Enable Global Interrupt e Local Interrupt
-
-    while (1){ };
-    // loop infinito aqui ?? nao ta indo no interrupt;
-
-
-
-}
-
-
-void Init (){
-    // Buzzer
-    P2DIR |= BIT5;
-    P2OUT &= ~BIT5;
-
-                    // LEDs
-    P1DIR |= BIT0;              // direção de saída
-    P1OUT &= ~BIT0;             // LED vermelho off
-
-    P4DIR |= BIT7;              // direção de saída
-    P4OUT &= ~BIT7;             // LED verde off
-
-                    // TRIGGER (P1.5)
-    P1DIR |= BIT5;              // direção de saída (uC manda informação)
-    P1OUT &= ~BIT5;             // início em 0 V
-
-                    // Echo (P2.0)
-    P2DIR &= ~BIT0;             // direção de entrada (sensor manda informação)
-    P2SEL |= BIT0;              // modo de captura utlizado (TA0.1)
-
-
-
-}
-
-
-                    // CALCULA DISTANCIA EM CM
-void calc_dist(){
-    DIST = CONTADOR/1048576;
-    DIST *= 12000;
-
-}
-
-                    // CCR1 = TRIGGER// CCR2 = ECHO LEITURAS// CCR3 = BUZZER ATIVA
-#pragma vector=TA0_CCRN_VECTOR
-__interrupt void TA0_CCRN_ISR(){
-    switch(TA0IV){
-      case 2:
-                  P1OUT |= BIT0;            // LIGAR LED SO PRA VER SE ENTRA NESSE CASO
-                  __delay_cycles(50000);   // debounce
-                  P1OUT ^= BIT5;          // ON
-                  __delay_cycles(10);     // Trigger Pulse
-                  P1OUT ^= BIT5;          // OFF
-
-        break;
-      case 4:
-                  P1OUT |= BIT0;            // LIGAR LED SO PRA VER SE ENTRA NESSE CASO
-                  if(TA0CCTL1 & CCI)
-                  {
-                          CONTADOR = TA0CCR1; //takes first time measure in us
-                  }
-                  else if(!(TA0CCTL1 & CCI))
-                  {
-                          CONTADOR = TA0CCR1 - CONTADOR;
-                          calc_dist();
-                          leds();
-
-                  }
-        break;
-      case 6:break;
-          // Buzzer;
-    default: break;
-    }
-}
+uint16_t CONTADOR0,CONTADOR1;
+double DIST ;
 
 
 
@@ -139,6 +39,132 @@ void leds()
         P4OUT &= ~BIT7;
     }
 
+}
+
+void trig(){
+
+
+    __delay_cycles(50000);   // debounce
+    P1OUT |= BIT5;          // ON
+    __delay_cycles(10);     // Trigger Pulse
+    P1OUT &= ~BIT5;          // OFF
+
+
+
+}
+
+
+
+void main()
+{
+    // Stop watchdog timer
+    WDTCTL = WDTPW | WDTHOLD;
+
+    // Increase core voltage so CPU can run at 16Mhz
+    // Step 1 allows clocks up to 12MHz, step 2 allows rising MCLK to 16MHz
+    pmmVCore(1);
+    pmmVCore(2);
+
+    // Configure clock
+    // This should make MCLK @16MHz, SMCLK @1MHz and ACLK @32768Hz
+    clockInit();
+
+    // Your program here... CCIS_0 | SCS
+    Init();
+    TA1CCTL1 = CM_3 | CCIS_0 | SCS| CAP | CCIE;
+
+    TA1CTL = TASSEL__SMCLK   |  MC_2      |   TACLR;            // limpa o Timer A
+
+
+
+
+
+
+
+
+    // Inicializar Pinos e setar SMCLK
+    __enable_interrupt();
+  //  _BIS_SR(GIE);
+
+    // Enable Global Interrupt e Local Interrupt
+
+    while (1){
+
+
+        trig();
+
+
+
+
+    };
+    // loop infinito aqui ?? nao ta indo no interrupt;
+
+
+
+}
+
+
+void Init (){
+    // Buzzer
+    P2DIR |= BIT5;
+    P2OUT &= ~BIT5;
+
+                    // LEDs
+    P1DIR |= BIT0;              // direção de saída
+    P1OUT &= ~BIT0;             // LED vermelho off
+
+    P4DIR |= BIT7;              // direção de saída
+    P4OUT &= ~BIT7;             // LED verde off
+
+                    // TRIGGER (P1.5)
+    P1OUT &= ~BIT5;             // início em 0 V
+    P1DIR |= BIT5;              // direção de saída (uC manda informação)
+
+
+
+
+                    // Echo (P2.0)
+    P2DIR &= ~BIT0;             // direção de entrada (sensor manda informação)
+    P2SEL |= BIT0;              // modo de captura utlizado (TA0.1)
+
+
+
+
+}
+
+
+                    // CALCULA DISTANCIA EM CM
+void calc_dist(){
+    DIST = (CONTADOR1-CONTADOR0)/1048576;
+    DIST *= 12000;
+
+}
+
+                    // CCR1 = TRIGGER// CCR2 = ECHO LEITURAS// CCR3 = BUZZER ATIVA
+#pragma vector=TIMER1_A1_VECTOR
+__interrupt void TA1_CCRN_ISR(){
+    switch(TA1IV){
+      case 2:
+                           // LIGAR LED SO PRA VER SE ENTRA NESSE CASO
+                  if(TA1CCTL1 & CCI)
+                      {
+
+                          CONTADOR0 = TA1CCR1;
+
+
+                      }
+                  else if(!(TA1CCTL1 & CCI))
+                      {
+                          CONTADOR1 = TA1CCR1;
+
+                          calc_dist();
+                          leds();
+
+                      }
+        break;
+
+    default: break;
+    }
 }
 
 
