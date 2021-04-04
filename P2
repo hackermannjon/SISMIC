@@ -8,7 +8,7 @@ void Init();
 void trig();
 void calc_dist();
 void leds();
-uint16_t CONTADOR0,CONTADOR1;
+uint16_t CONTADOR0,CONTADOR1,flag=0;
 double DIST ;
 
 
@@ -90,9 +90,13 @@ void main()
 
     while (1){
 
-
+        __delay_cycles(10);
         trig();
 
+        if(flag==1){
+        calc_dist();
+        leds();
+        }
 
 
 
@@ -117,15 +121,16 @@ void Init (){
     P4OUT &= ~BIT7;             // LED verde off
 
                     // TRIGGER (P1.5)
-    P1OUT &= ~BIT5;             // início em 0 V
     P1DIR |= BIT5;              // direção de saída (uC manda informação)
+    P1OUT &= ~BIT5;             // início em 0 V
+
 
 
 
 
                     // Echo (P2.0)
     P2DIR &= ~BIT0;             // direção de entrada (sensor manda informação)
-    P2SEL |= BIT0;              // modo de captura utlizado (TA0.1)
+ //   P2SEL |= BIT0;              // modo de captura utlizado (TA0.1)
 
 
 
@@ -146,19 +151,17 @@ __interrupt void TA1_CCRN_ISR(){
     switch(TA1IV){
       case 2:
                            // LIGAR LED SO PRA VER SE ENTRA NESSE CASO
-                  if(TA1CCTL1 & CCI)
+                  if(flag==1)
                       {
 
                           CONTADOR0 = TA1CCR1;
 
 
                       }
-                  else if(!(TA1CCTL1 & CCI))
+                  else if(flag==0)
                       {
                           CONTADOR1 = TA1CCR1;
-
-                          calc_dist();
-                          leds();
+                          flag = 1;
 
                       }
         break;
