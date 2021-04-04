@@ -8,7 +8,8 @@ void Init();
 void trig();
 void calc_dist();
 void leds();
-uint16_t CONTADOR0,CONTADOR1,flag=0;
+uint16_t CONTADOR0,CONTADOR1;
+int flag=0;
 double DIST ;
 
 
@@ -90,7 +91,7 @@ void main()
 
     while (1){
 
-        __delay_cycles(10);
+
         trig();
 
         if(flag==1){
@@ -155,10 +156,10 @@ __interrupt void TA1_CCRN_ISR(){
                       {
 
                           CONTADOR0 = TA1CCR1;
-
+                          flag=0;
 
                       }
-                  else if(flag==0)
+                  else
                       {
                           CONTADOR1 = TA1CCR1;
                           flag = 1;
